@@ -13,6 +13,8 @@ Before starting, ensure you have the following installed:
 -   Node.js & NPM
 -   Git
 
+*   if you have laragon just use the laragon terminal.
+
 ## Initial Setup
 
 If you are setting up the project for the first time, run the following commands in order.
