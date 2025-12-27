@@ -9,11 +9,14 @@ This document defines the architecture and development approach for SproutLMS. I
 1. [Philosophy: Frontend First](#philosophy-frontend-first)
 2. [Understanding Laravel (Simple Terms)](#understanding-laravel-simple-terms)
 3. [Project Structure](#project-structure)
-4. [Development Workflow](#development-workflow)
-5. [Building a Feature (Step-by-Step)](#building-a-feature-step-by-step)
-6. [Key Concepts](#key-concepts)
-7. [Best Practices](#best-practices)
-8. [Common Patterns](#common-patterns)
+4. [Current Features](#current-features)
+5. [Development Workflow](#development-workflow)
+6. [Building a Feature (Step-by-Step)](#building-a-feature-step-by-step)
+7. [Key Concepts](#key-concepts)
+8. [Laravel 11+ Important Notes](#laravel-11-important-notes)
+9. [Best Practices](#best-practices)
+10. [Common Patterns](#common-patterns)
+11. [Route Ordering Rules](#route-ordering-rules)
 
 ---
 
@@ -45,6 +48,7 @@ We design the database → We create models → We build controllers → We crea
 ### Example Flow
 
 **Traditional (Backend First):**
+
 1. Create database table
 2. Create model
 3. Create controller
@@ -53,6 +57,7 @@ We design the database → We create models → We build controllers → We crea
 6. Test in browser
 
 **Frontend First:**
+
 1. Create view (mockup with fake data)
 2. See it in browser
 3. Create route to show the view
@@ -71,28 +76,43 @@ Laravel is a PHP framework that helps you build web applications. Think of it as
 ### Key Laravel Concepts (Simplified)
 
 #### 1. **Routes** (`routes/web.php`)
-- **What it is**: A map that says "when someone visits this URL, do this"
-- **Example**: `Route::get('/courses', ...)` means "when someone goes to `/courses`, show them something"
+
+-   **What it is**: A map that says "when someone visits this URL, do this"
+-   **Example**: `Route::get('/courses', ...)` means "when someone goes to `/courses`, show them something"
+-   **Important**: Route order matters! Specific routes must come before parameterized routes.
 
 #### 2. **Views** (`resources/views/`)
-- **What it is**: The HTML templates (what users see)
-- **File type**: `.blade.php` files (Blade is Laravel's templating engine)
-- **Example**: `landing.blade.php` is the landing page HTML
+
+-   **What it is**: The HTML templates (what users see)
+-   **File type**: `.blade.php` files (Blade is Laravel's templating engine)
+-   **Example**: `landing.blade.php` is the landing page HTML
+-   **Layout**: Use `@extends('layouts.app')` for consistent page structure
 
 #### 3. **Controllers** (`app/Http/Controllers/`)
-- **What it is**: PHP classes that handle the logic
-- **Purpose**: Get data, process it, send it to the view
-- **Example**: `CourseController` handles everything related to courses
+
+-   **What it is**: PHP classes that handle the logic
+-   **Purpose**: Get data, process it, send it to the view
+-   **Example**: `CourseController` handles everything related to courses
+-   **Note**: In Laravel 11+, middleware is applied in routes, not controller constructors
 
 #### 4. **Models** (`app/Models/`)
-- **What it is**: PHP classes that represent database tables
-- **Purpose**: Easy way to work with database data
-- **Example**: `Course` model represents the `courses` table
+
+-   **What it is**: PHP classes that represent database tables
+-   **Purpose**: Easy way to work with database data
+-   **Example**: `Course` model represents the `courses` table
+-   **Relationships**: Models can have relationships (hasMany, belongsTo, etc.)
 
 #### 5. **Migrations** (`database/migrations/`)
-- **What it is**: Files that create/modify database tables
-- **Purpose**: Version control for your database structure
-- **Example**: `create_courses_table.php` creates the courses table
+
+-   **What it is**: Files that create/modify database tables
+-   **Purpose**: Version control for your database structure
+-   **Example**: `create_courses_table.php` creates the courses table
+
+#### 6. **Middleware** (`app/Http/Middleware/`)
+
+-   **What it is**: Code that runs before/after requests
+-   **Purpose**: Authentication, authorization, validation
+-   **Example**: `EnsureUserIsInstructor` checks if user is an instructor
 
 ### How They Work Together
 
@@ -100,6 +120,8 @@ Laravel is a PHP framework that helps you build web applications. Think of it as
 User visits URL
     ↓
 Route receives request
+    ↓
+Middleware checks permissions
     ↓
 Controller handles logic
     ↓
@@ -122,13 +144,23 @@ User sees the page
 lms-app/
 ├── app/                          # Backend PHP code
 │   ├── Http/
-│   │   └── Controllers/         # Controllers (business logic)
-│   └── Models/                   # Models (database representation)
+│   │   ├── Controllers/         # Controllers (business logic)
+│   │   │   ├── Auth/           # Authentication controllers
+│   │   │   └── ...             # Feature controllers
+│   │   └── Middleware/         # Custom middleware
+│   ├── Models/                   # Models (database representation)
+│   ├── Policies/                 # Authorization policies
+│   └── Providers/                # Service providers
 │
 ├── resources/
 │   ├── views/                    # Frontend templates (Blade files)
-│   │   ├── components/           # Reusable UI components
-│   │   └── layouts/             # Page layouts
+│   │   ├── auth/                 # Login/register pages
+│   │   ├── courses/              # Course pages
+│   │   ├── dashboard/            # Dashboard pages
+│   │   ├── enrollments/          # Enrollment pages
+│   │   ├── lessons/              # Lesson pages
+│   │   ├── layouts/              # Page layouts
+│   │   └── landing.blade.php     # Landing page
 │   ├── css/
 │   │   └── app.css              # Tailwind CSS (our color scheme)
 │   └── js/
@@ -146,14 +178,54 @@ lms-app/
 
 ### File Naming Conventions
 
-- **Controllers**: `PascalCase` + `Controller` suffix
-  - Example: `CourseController.php`, `LessonController.php`
-- **Models**: `PascalCase`, singular
-  - Example: `Course.php`, `Lesson.php`, `User.php`
-- **Views**: `kebab-case` (lowercase with hyphens)
-  - Example: `course-list.blade.php`, `lesson-show.blade.php`
-- **Migrations**: `snake_case` with timestamp
-  - Example: `2024_01_15_120000_create_courses_table.php`
+-   **Controllers**: `PascalCase` + `Controller` suffix
+    -   Example: `CourseController.php`, `LessonController.php`
+-   **Models**: `PascalCase`, singular
+    -   Example: `Course.php`, `Lesson.php`, `User.php`
+-   **Views**: `kebab-case` (lowercase with hyphens)
+    -   Example: `course-list.blade.php`, `lesson-show.blade.php`
+-   **Migrations**: `snake_case` with timestamp
+    -   Example: `2024_01_15_120000_create_courses_table.php`
+-   **Middleware**: `PascalCase` descriptive name
+    -   Example: `EnsureUserIsInstructor.php`, `EnsureUserIsStudent.php`
+
+---
+
+## Current Features
+
+### Implemented Features
+
+#### Authentication & Authorization
+
+-   ✅ User registration (student/instructor roles)
+-   ✅ Login/logout functionality
+-   ✅ Role-based access control (middleware)
+-   ✅ Session-based authentication
+
+#### Instructor Features
+
+-   ✅ Dashboard with course/student statistics
+-   ✅ Course CRUD (Create, Read, Update, Delete)
+-   ✅ Course publishing/unpublishing
+-   ✅ Lesson management (text and video lessons)
+-   ✅ View enrolled students
+
+#### Student Features
+
+-   ✅ Dashboard with progress tracking
+-   ✅ Browse published courses
+-   ✅ Enroll in courses
+-   ✅ View lessons (text and video)
+-   ✅ Automatic progress tracking
+-   ✅ Course progress percentage
+
+#### Database Structure
+
+-   ✅ Users table with roles
+-   ✅ Courses table
+-   ✅ Lessons table (text/video support)
+-   ✅ Enrollments table
+-   ✅ Progress tracking table
 
 ---
 
@@ -162,180 +234,37 @@ lms-app/
 ### The Frontend First Workflow
 
 #### Step 1: Design the UI (View First)
+
 1. Create a Blade view file in `resources/views/`
 2. Write HTML with Tailwind CSS
 3. Use fake/mock data to see how it looks
 4. Test in browser
 
 #### Step 2: Create the Route
+
 1. Add route in `routes/web.php`
 2. Point it to the view (temporarily)
-3. Test the URL works
+3. **Important**: Place specific routes before parameterized routes
+4. Test the URL works
 
 #### Step 3: Add Controller Logic
+
 1. Create controller
 2. Move logic from route to controller
 3. Update route to use controller
 
 #### Step 4: Connect to Database
+
 1. Create migration (database table)
 2. Create model
 3. Update controller to use model
 4. Replace fake data with real data
 
-### Example: Building a Course List Page
+#### Step 5: Add Authorization
 
-#### Step 1: Create the View (Frontend First!)
-
-```blade
-{{-- resources/views/courses/index.blade.php --}}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Courses - SproutLMS</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body>
-    <h1>My Courses</h1>
-    
-    {{-- Fake data to see how it looks --}}
-    <div class="course-card">
-        <h2>Introduction to PHP</h2>
-        <p>Learn PHP from scratch</p>
-        <span>12 lessons</span>
-    </div>
-    
-    <div class="course-card">
-        <h2>Laravel Basics</h2>
-        <p>Master Laravel framework</p>
-        <span>20 lessons</span>
-    </div>
-</body>
-</html>
-```
-
-**Test it**: Create a route to see this view immediately!
-
-#### Step 2: Create Route
-
-```php
-// routes/web.php
-Route::get('/courses', function () {
-    return view('courses.index');
-});
-```
-
-**Test it**: Visit `http://localhost:8000/courses` - you should see your page!
-
-#### Step 3: Add Controller
-
-```php
-// app/Http/Controllers/CourseController.php
-<?php
-
-namespace App\Http\Controllers;
-
-class CourseController extends Controller
-{
-    public function index()
-    {
-        // For now, use fake data
-        $courses = [
-            ['title' => 'Introduction to PHP', 'description' => 'Learn PHP from scratch', 'lessons' => 12],
-            ['title' => 'Laravel Basics', 'description' => 'Master Laravel framework', 'lessons' => 20],
-        ];
-        
-        return view('courses.index', ['courses' => $courses]);
-    }
-}
-```
-
-Update the route:
-```php
-// routes/web.php
-use App\Http\Controllers\CourseController;
-
-Route::get('/courses', [CourseController::class, 'index']);
-```
-
-Update the view to use data:
-```blade
-{{-- resources/views/courses/index.blade.php --}}
-@foreach($courses as $course)
-    <div class="course-card">
-        <h2>{{ $course['title'] }}</h2>
-        <p>{{ $course['description'] }}</p>
-        <span>{{ $course['lessons'] }} lessons</span>
-    </div>
-@endforeach
-```
-
-#### Step 4: Connect to Database
-
-Create migration:
-```bash
-php artisan make:migration create_courses_table
-```
-
-Edit migration:
-```php
-// database/migrations/xxxx_create_courses_table.php
-public function up()
-{
-    Schema::create('courses', function (Blueprint $table) {
-        $table->id();
-        $table->string('title');
-        $table->text('description');
-        $table->integer('lessons_count')->default(0);
-        $table->timestamps();
-    });
-}
-```
-
-Run migration:
-```bash
-php artisan migrate
-```
-
-Create model:
-```php
-// app/Models/Course.php
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Model;
-
-class Course extends Model
-{
-    protected $fillable = ['title', 'description', 'lessons_count'];
-}
-```
-
-Update controller:
-```php
-// app/Http/Controllers/CourseController.php
-use App\Models\Course;
-
-public function index()
-{
-    $courses = Course::all(); // Get from database
-    return view('courses.index', ['courses' => $courses]);
-}
-```
-
-Update view:
-```blade
-@foreach($courses as $course)
-    <div class="course-card">
-        <h2>{{ $course->title }}</h2>
-        <p>{{ $course->description }}</p>
-        <span>{{ $course->lessons_count }} lessons</span>
-    </div>
-@endforeach
-```
-
-**Done!** You've built a feature Frontend First!
+1. Add middleware to routes
+2. Add authorization checks in controllers
+3. Test access control
 
 ---
 
@@ -343,22 +272,26 @@ Update view:
 
 ### Checklist for Every Feature
 
-- [ ] **1. Design the UI** (create Blade view with mock data)
-- [ ] **2. Test the view** (create temporary route)
-- [ ] **3. Style it** (add Tailwind classes)
-- [ ] **4. Create proper route** (in `routes/web.php`)
-- [ ] **5. Create controller** (move logic from route)
-- [ ] **6. Create model** (if you need database)
-- [ ] **7. Create migration** (database structure)
-- [ ] **8. Connect everything** (controller → model → view)
-- [ ] **9. Test with real data**
-- [ ] **10. Refine and polish**
+-   [ ] **1. Design the UI** (create Blade view with mock data)
+-   [ ] **2. Test the view** (create temporary route)
+-   [ ] **3. Style it** (add Tailwind classes)
+-   [ ] **4. Create proper route** (in `routes/web.php`, mind the order!)
+-   [ ] **5. Create controller** (move logic from route)
+-   [ ] **6. Create model** (if you need database)
+-   [ ] **7. Create migration** (database structure)
+-   [ ] **8. Connect everything** (controller → model → view)
+-   [ ] **9. Add middleware** (if route needs protection)
+-   [ ] **10. Test with real data**
+-   [ ] **11. Refine and polish**
 
 ### Quick Reference: Laravel Commands
 
 ```bash
 # Create a controller
 php artisan make:controller CourseController
+
+# Create a resource controller (CRUD)
+php artisan make:controller CourseController --resource
 
 # Create a model
 php artisan make:model Course
@@ -368,6 +301,12 @@ php artisan make:migration create_courses_table
 
 # Create model + migration together
 php artisan make:model Course -m
+
+# Create middleware
+php artisan make:middleware EnsureUserIsInstructor
+
+# Create policy
+php artisan make:policy CoursePolicy --model=Course
 
 # Run migrations
 php artisan migrate
@@ -380,6 +319,9 @@ php artisan serve
 
 # Watch and compile frontend assets
 npm run dev
+
+# Build frontend assets for production
+npm run build
 ```
 
 ---
@@ -391,35 +333,54 @@ npm run dev
 Blade is Laravel's templating engine. It lets you write PHP in a cleaner way.
 
 #### Displaying Variables
+
 ```blade
 {{ $variable }}              {{-- Escaped output (safe) --}}
 {!! $html !!}                {{-- Raw HTML (use carefully) --}}
 ```
 
 #### Conditionals
+
 ```blade
 @if($condition)
     <p>This shows if true</p>
 @else
     <p>This shows if false</p>
 @endif
+
+@auth
+    <p>User is logged in</p>
+@endauth
+
+@if(auth()->user()->role === 'instructor')
+    <p>User is an instructor</p>
+@endif
 ```
 
 #### Loops
+
 ```blade
 @foreach($items as $item)
     <p>{{ $item->name }}</p>
 @endforeach
 ```
 
-#### Including Components
+#### Including Layouts
+
 ```blade
-<x-button text="Click me" />
+@extends('layouts.app')
+
+@section('title', 'Page Title')
+
+@section('content')
+    <h1>Page Content</h1>
+@endsection
 ```
 
 ### 2. Passing Data to Views
 
 **From Route:**
+
 ```php
 Route::get('/courses', function () {
     return view('courses.index', ['courses' => $courses]);
@@ -427,6 +388,7 @@ Route::get('/courses', function () {
 ```
 
 **From Controller:**
+
 ```php
 public function index()
 {
@@ -438,6 +400,7 @@ public function index()
 ```
 
 **In View:**
+
 ```blade
 @foreach($courses as $course)
     {{ $course->title }}
@@ -447,24 +410,37 @@ public function index()
 ### 3. Routes
 
 **Basic Route:**
+
 ```php
 Route::get('/courses', [CourseController::class, 'index']);
 ```
 
 **Route with Parameter:**
+
 ```php
-Route::get('/courses/{id}', [CourseController::class, 'show']);
+Route::get('/courses/{course}', [CourseController::class, 'show']);
 ```
 
-**Resource Routes (CRUD):**
+**Route with Middleware:**
+
 ```php
-Route::resource('courses', CourseController::class);
-// Creates: GET /courses, GET /courses/create, POST /courses, etc.
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+});
+```
+
+**Nested Routes:**
+
+```php
+Route::prefix('courses/{course}')->group(function () {
+    Route::get('/lessons/{lesson}', [LessonController::class, 'show']);
+});
 ```
 
 ### 4. Controllers
 
 **Basic Controller:**
+
 ```php
 <?php
 
@@ -479,69 +455,239 @@ class CourseController extends Controller
         $courses = Course::all();
         return view('courses.index', compact('courses'));
     }
-    
-    public function show($id)
+
+    public function show(Course $course)
     {
-        $course = Course::findOrFail($id);
         return view('courses.show', compact('course'));
     }
 }
 ```
 
+**Note**: In Laravel 11+, do NOT use `$this->middleware()` in constructors. Apply middleware in routes instead.
+
 ### 5. Models
 
 **Basic Model:**
+
 ```php
 <?php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Course extends Model
 {
-    // Laravel automatically knows this model uses the 'courses' table
-    
     protected $fillable = [
+        'instructor_id',
         'title',
         'description',
-        'lessons_count'
+        'is_published',
     ];
+
+    protected $casts = [
+        'is_published' => 'boolean',
+    ];
+
+    // Relationships
+    public function instructor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'instructor_id');
+    }
+
+    public function lessons(): HasMany
+    {
+        return $this->hasMany(Lesson::class)->orderBy('order');
+    }
 }
 ```
 
 **Using Models:**
+
 ```php
 // Get all
 $courses = Course::all();
 
 // Get one
 $course = Course::find(1);
+// OR with route model binding
+public function show(Course $course) { ... }
 
 // Create
 Course::create(['title' => 'New Course']);
 
 // Update
 $course->update(['title' => 'Updated Title']);
+
+// Delete
+$course->delete();
+
+// With relationships
+$course->load('lessons', 'instructor');
+$course->lessons()->count();
 ```
+
+### 6. Middleware
+
+**Creating Middleware:**
+
+```php
+// app/Http/Middleware/EnsureUserIsInstructor.php
+public function handle(Request $request, Closure $next): Response
+{
+    if (!auth()->check() || auth()->user()->role !== 'instructor') {
+        abort(403, 'Only instructors can access this page.');
+    }
+
+    return $next($request);
+}
+```
+
+**Registering Middleware:**
+
+```php
+// bootstrap/app.php
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->alias([
+        'instructor' => \App\Http\Middleware\EnsureUserIsInstructor::class,
+        'student' => \App\Http\Middleware\EnsureUserIsStudent::class,
+    ]);
+})
+```
+
+**Using Middleware:**
+
+```php
+// In routes/web.php
+Route::middleware('instructor')->group(function () {
+    Route::get('/courses/create', [CourseController::class, 'create']);
+});
+```
+
+---
+
+## Laravel 11+ Important Notes
+
+### ⚠️ No Middleware in Controller Constructors
+
+**Laravel 11+ removed the ability to use `$this->middleware()` in controller constructors.**
+
+**❌ Don't do this:**
+
+```php
+class CourseController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');  // This will cause an error!
+        $this->middleware('instructor')->except(['browse', 'show']);
+    }
+}
+```
+
+**✅ Do this instead:**
+
+```php
+// In routes/web.php
+Route::middleware('auth')->group(function () {
+    Route::middleware('instructor')->group(function () {
+        Route::get('/courses', [CourseController::class, 'index']);
+        Route::get('/courses/create', [CourseController::class, 'create']);
+    });
+});
+```
+
+### Route Model Binding
+
+Laravel automatically resolves model instances from route parameters:
+
+```php
+// Route
+Route::get('/courses/{course}', [CourseController::class, 'show']);
+
+// Controller - $course is automatically resolved
+public function show(Course $course)
+{
+    // $course is already loaded from database
+    return view('courses.show', compact('course'));
+}
+```
+
+---
+
+## Route Ordering Rules
+
+### ⚠️ Critical: Route Order Matters!
+
+Laravel matches routes in the order they're defined. **Specific routes must come before parameterized routes.**
+
+### ❌ Wrong Order (Will Cause 404 Errors)
+
+```php
+// This will match /courses/create as /courses/{course} where course = "create"
+Route::get('/courses/{course}', [CourseController::class, 'show']);
+Route::get('/courses/create', [CourseController::class, 'create']); // 404!
+```
+
+### ✅ Correct Order
+
+```php
+// Specific routes first
+Route::get('/courses/browse', [CourseController::class, 'browse']);
+Route::get('/courses/create', [CourseController::class, 'create']);
+
+// Parameterized routes last
+Route::get('/courses/{course}', [CourseController::class, 'show']);
+Route::get('/courses/{course}/edit', [CourseController::class, 'edit']);
+```
+
+### Same Rule for Nested Routes
+
+```php
+Route::prefix('courses/{course}')->group(function () {
+    // Specific routes first
+    Route::get('/lessons/create', [LessonController::class, 'create']);
+    Route::get('/lessons/{lesson}/edit', [LessonController::class, 'edit']);
+
+    // Parameterized routes last
+    Route::get('/lessons/{lesson}', [LessonController::class, 'show']);
+});
+```
+
+### Best Practice
+
+Always define routes in this order:
+
+1. Most specific routes (e.g., `/courses/browse`, `/courses/create`)
+2. Routes with multiple parameters (e.g., `/courses/{course}/lessons/{lesson}/edit`)
+3. Routes with single parameter (e.g., `/courses/{course}/edit`)
+4. Most general parameterized route (e.g., `/courses/{course}`)
 
 ---
 
 ## Best Practices
 
 ### 1. **Start with the View**
+
 Always create the Blade template first, even with fake data. This helps you:
-- See what you're building
-- Understand what data you need
-- Test styling immediately
+
+-   See what you're building
+-   Understand what data you need
+-   Test styling immediately
 
 ### 2. **Keep Controllers Thin**
+
 Controllers should only:
-- Get data (from models)
-- Pass data to views
-- Handle simple validation
+
+-   Get data (from models)
+-   Pass data to views
+-   Handle simple validation
+-   Check authorization
 
 **Bad:**
+
 ```php
 public function index()
 {
@@ -556,53 +702,79 @@ public function index()
 ```
 
 **Good:**
+
 ```php
 public function index()
 {
-    $courses = Course::all();
+    $courses = Course::where('instructor_id', auth()->id())
+        ->withCount('lessons')
+        ->latest()
+        ->get();
     return view('courses.index', compact('courses'));
 }
 ```
 
-Move logic to the model or view where appropriate.
+### 3. **Use Route Model Binding**
 
-### 3. **Use Components for Reusable UI**
-If you use the same UI element more than once, create a component:
+Instead of manually finding models, use route model binding:
 
-```blade
-{{-- resources/views/components/course-card.blade.php --}}
-<div class="course-card">
-    <h2>{{ $title }}</h2>
-    <p>{{ $description }}</p>
-</div>
+**Bad:**
+
+```php
+public function show($id)
+{
+    $course = Course::findOrFail($id);
+    return view('courses.show', compact('course'));
+}
 ```
 
-Use it:
-```blade
-<x-course-card title="PHP Course" description="Learn PHP" />
+**Good:**
+
+```php
+public function show(Course $course)
+{
+    return view('courses.show', compact('course'));
+}
 ```
 
-### 4. **Follow Naming Conventions**
-- Controllers: `PascalCaseController`
-- Models: `PascalCase` (singular)
-- Views: `kebab-case`
-- Routes: `kebab-case` URLs
+### 4. **Apply Middleware in Routes**
 
-### 5. **Organize Views by Feature**
+In Laravel 11+, apply middleware in routes, not controllers:
+
+```php
+Route::middleware('auth')->group(function () {
+    Route::middleware('instructor')->group(function () {
+        Route::get('/courses/create', [CourseController::class, 'create']);
+    });
+});
+```
+
+### 5. **Follow Naming Conventions**
+
+-   Controllers: `PascalCaseController`
+-   Models: `PascalCase` (singular)
+-   Views: `kebab-case`
+-   Routes: `kebab-case` URLs
+
+### 6. **Organize Views by Feature**
+
 ```
 resources/views/
 ├── courses/
 │   ├── index.blade.php      (list all courses)
 │   ├── show.blade.php        (show one course)
-│   └── create.blade.php      (create new course)
+│   ├── create.blade.php      (create new course)
+│   └── edit.blade.php         (edit course)
 ├── lessons/
-│   ├── index.blade.php
+│   ├── create.blade.php
+│   ├── edit.blade.php
 │   └── show.blade.php
-└── components/
-    └── course-card.blade.php
+└── layouts/
+    └── app.blade.php
 ```
 
-### 6. **Use Our Color Scheme**
+### 7. **Use Our Color Scheme**
+
 Always use the defined color variables from `app.css`:
 
 ```blade
@@ -617,6 +789,22 @@ Always use the defined color variables from `app.css`:
 </div>
 ```
 
+### 8. **Handle Authorization Properly**
+
+Always check if user has permission:
+
+```php
+public function edit(Course $course)
+{
+    // Check authorization
+    if (auth()->id() !== $course->instructor_id) {
+        abort(403);
+    }
+
+    return view('courses.edit', compact('course'));
+}
+```
+
 ---
 
 ## Common Patterns
@@ -624,20 +812,26 @@ Always use the defined color variables from `app.css`:
 ### Pattern 1: List Page (Index)
 
 **Route:**
+
 ```php
-Route::get('/courses', [CourseController::class, 'index']);
+Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
 ```
 
 **Controller:**
+
 ```php
 public function index()
 {
-    $courses = Course::all();
+    $courses = Course::where('instructor_id', auth()->id())
+        ->withCount('lessons')
+        ->latest()
+        ->get();
     return view('courses.index', compact('courses'));
 }
 ```
 
 **View:**
+
 ```blade
 @foreach($courses as $course)
     <div>{{ $course->title }}</div>
@@ -647,20 +841,23 @@ public function index()
 ### Pattern 2: Detail Page (Show)
 
 **Route:**
+
 ```php
-Route::get('/courses/{id}', [CourseController::class, 'show']);
+Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
 ```
 
 **Controller:**
+
 ```php
-public function show($id)
+public function show(Course $course)
 {
-    $course = Course::findOrFail($id);
+    $course->load(['instructor', 'lessons']);
     return view('courses.show', compact('course'));
 }
 ```
 
 **View:**
+
 ```blade
 <h1>{{ $course->title }}</h1>
 <p>{{ $course->description }}</p>
@@ -669,12 +866,14 @@ public function show($id)
 ### Pattern 3: Create Form
 
 **Route:**
+
 ```php
-Route::get('/courses/create', [CourseController::class, 'create']);
-Route::post('/courses', [CourseController::class, 'store']);
+Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
+Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
 ```
 
 **Controller:**
+
 ```php
 public function create()
 {
@@ -683,23 +882,65 @@ public function create()
 
 public function store(Request $request)
 {
-    Course::create([
-        'title' => $request->title,
-        'description' => $request->description,
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
     ]);
-    
-    return redirect('/courses');
+
+    $course = Course::create([
+        'instructor_id' => auth()->id(),
+        'title' => $validated['title'],
+        'description' => $validated['description'],
+    ]);
+
+    return redirect()->route('courses.show', $course)
+        ->with('success', 'Course created successfully!');
 }
 ```
 
 **View:**
+
 ```blade
-<form method="POST" action="/courses">
+<form method="POST" action="{{ route('courses.store') }}">
     @csrf
     <input type="text" name="title" required>
     <textarea name="description"></textarea>
     <button type="submit">Create Course</button>
 </form>
+```
+
+### Pattern 4: Nested Resources
+
+**Route:**
+
+```php
+Route::prefix('courses/{course}')->group(function () {
+    Route::get('/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
+    Route::post('/lessons', [LessonController::class, 'store'])->name('lessons.store');
+    Route::get('/lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
+});
+```
+
+**Controller:**
+
+```php
+public function create(Course $course)
+{
+    if (auth()->id() !== $course->instructor_id) {
+        abort(403);
+    }
+    return view('lessons.create', compact('course'));
+}
+
+public function store(Request $request, Course $course)
+{
+    if (auth()->id() !== $course->instructor_id) {
+        abort(403);
+    }
+
+    $course->lessons()->create($request->validated());
+    return redirect()->route('courses.show', $course);
+}
 ```
 
 ---
@@ -709,12 +950,13 @@ public function store(Request $request)
 **"I want to add a new page. Where do I start?"**
 
 1. ✅ **Create the view first** (`resources/views/your-page.blade.php`)
-2. ✅ **Add a route** (`routes/web.php`)
+2. ✅ **Add a route** (`routes/web.php` - remember route order!)
 3. ✅ **Test it works** (visit the URL)
 4. ✅ **Add styling** (Tailwind CSS)
 5. ✅ **Create controller** (if you need logic)
 6. ✅ **Add model** (if you need database)
 7. ✅ **Create migration** (if you need new table)
+8. ✅ **Add middleware** (if route needs protection)
 
 **"I need to show data from the database. How?"**
 
@@ -730,25 +972,34 @@ public function store(Request $request)
 3. ✅ **In controller**: `YourModel::create([...]);`
 4. ✅ **Redirect**: `return redirect('/path');`
 
+**"I'm getting a 404 error on a route. Why?"**
+
+1. ✅ **Check route order** - specific routes must come before parameterized routes
+2. ✅ **Check route name** - make sure it matches
+3. ✅ **Check middleware** - make sure you're authenticated/authorized
+4. ✅ **Run `php artisan route:list`** - see all registered routes
+
 ---
 
 ## Remember
 
 1. **Frontend First**: Always start with the view
 2. **See it work**: Test in browser as soon as possible
-3. **Iterate**: Build, test, refine, repeat
-4. **Keep it simple**: Don't overcomplicate things
-5. **Use our colors**: Stick to the defined color scheme
-6. **Follow conventions**: Naming, structure, patterns
+3. **Route order matters**: Specific routes before parameterized routes
+4. **No middleware in constructors**: Apply middleware in routes (Laravel 11+)
+5. **Iterate**: Build, test, refine, repeat
+6. **Keep it simple**: Don't overcomplicate things
+7. **Use our colors**: Stick to the defined color scheme
+8. **Follow conventions**: Naming, structure, patterns
 
 ---
 
 ## Need Help?
 
-- Check Laravel docs: https://laravel.com/docs
-- Check Tailwind docs: https://tailwindcss.com/docs
-- Review this architecture guide
-- Look at existing code for examples
+-   Check Laravel docs: https://laravel.com/docs
+-   Check Tailwind docs: https://tailwindcss.com/docs
+-   Review this architecture guide
+-   Look at existing code for examples
+-   Check `php artisan route:list` to see all routes
 
 **Happy coding! 🌱**
-
