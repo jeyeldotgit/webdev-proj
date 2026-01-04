@@ -1,12 +1,12 @@
 # Architecture Guide – SproutLMS
 
-This document defines the architecture and development approach for SproutLMS. It's designed to guide developers, especially those new to Laravel, through building features using a **Frontend First** mental model.
+This document defines the architecture and development approach for SproutLMS. It's designed to guide developers working inside the Laravel application whose flow is driven by routes, middleware, controllers, and Blade views rather than designer-first prototypes.
 
 ---
 
 ## Table of Contents
 
-1. [Philosophy: Frontend First](#philosophy-frontend-first)
+1. [Philosophy: Backend-First Flow](#philosophy-backend-first-flow)
 2. [Understanding Laravel (Simple Terms)](#understanding-laravel-simple-terms)
 3. [Project Structure](#project-structure)
 4. [Current Features](#current-features)
@@ -20,50 +20,33 @@ This document defines the architecture and development approach for SproutLMS. I
 
 ---
 
-## Philosophy: Frontend First
+## Philosophy: Backend-First Flow
 
-### What Does "Frontend First" Mean?
+### What Does "Backend First" Mean?
 
-**Frontend First** means we start with what the user sees and experiences, then build the backend to support it.
+**Backend First** means we solve for business logic, routing, and permissions before polishing the UI. The rank-and-file of this codebase is the route → middleware → controller → model pipeline, and the Blade view is the final touch that mirrors the data the backend already prepares.
 
 ### Why This Approach?
 
-1. **User-Centric**: We design for users, not databases
-2. **Faster Iteration**: See results immediately in the browser
-3. **Clear Requirements**: The UI shows exactly what data/features are needed
-4. **Easier to Learn**: Visual feedback helps understand what's happening
+1. **Consistency with Laravel**: Routes define behavior, middleware enforces permissions, and controllers orchestrate models that power the views.
+2. **Predictable Access Control**: Backing each route with middleware (like `auth`, `instructor`, `student`) keeps authorization centralized.
+3. **Real Data Early**: Controllers query real models before views render them, so Blade templates stay simple and reusable.
+4. **Easier Maintenanc**: Changes are tracked through explicit routes and controllers rather than ad-hoc UI-first tweaks.
 
 ### The Mental Model
 
 ```
-User sees something → We build the view → We create the route → We add the controller → We design the database
-```
-
-Instead of:
-
-```
-We design the database → We create models → We build controllers → We create routes → Finally, we build the view
+Incoming request → Matched route → Middleware guards → Controller handles logic → Model retrieves data → Blade renders response
 ```
 
 ### Example Flow
 
-**Traditional (Backend First):**
-
-1. Create database table
-2. Create model
-3. Create controller
-4. Create route
-5. Create view
-6. Test in browser
-
-**Frontend First:**
-
-1. Create view (mockup with fake data)
-2. See it in browser
-3. Create route to show the view
-4. Add controller to handle logic
-5. Create model for data
-6. Create database migration
+1. **Define the route** in `routes/web.php` (mind the order: specific routes, then parameterized routes, then fallbacks).
+2. **Attach middleware** as needed (`auth`, `instructor`, `student`) so only authorized users can hit it.
+3. **Implement controller logic** that queries/updates models (`CourseController`, `LessonController`, etc.).
+4. **Build or evolve the view** to reflect the backend data, using Blade components/layouts after real data is flowing.
+5. **Add migrations/models** only when new data structures are required.
+6. **Polish front-end polish** (Tailwind, layout sections) at the end, since the data and routes define what's possible.
 
 ---
 
@@ -259,40 +242,37 @@ lms-app/
 
 ## Development Workflow
 
-### The Frontend First Workflow
+### The Route-Driven Workflow
 
-#### Step 1: Design the UI (View First)
+#### Step 1: Understand the data and permissions
 
-1. Create a Blade view file in `resources/views/`
-2. Write HTML with Tailwind CSS
-3. Use fake/mock data to see how it looks
-4. Test in browser
+1. Determine which models (e.g., `Course`, `Lesson`, `Enrollment`) will participate.
+2. Sketch the relationships and any additional fields, then update migrations/models or policies as needed.
+3. Decide which roles (student, instructor) should see or mutate the data so we can apply the right middleware later.
 
-#### Step 2: Create the Route
+#### Step 2: Define the route
 
-1. Add route in `routes/web.php`
-2. Point it to the view (temporarily)
-3. **Important**: Place specific routes before parameterized routes
-4. Test the URL works
+1. Add the route to `routes/web.php`, grouping related endpoints under the same middleware (`auth`, `instructor`, `student`).
+2. Respect route ordering: specific paths before parameterized ones, nested route groups last.
+3. Give it a named route so Blade and redirects can reference it (`route('courses.create')`, etc.).
 
-#### Step 3: Add Controller Logic
+#### Step 3: Implement controller logic
 
-1. Create controller
-2. Move logic from route to controller
-3. Update route to use controller
+1. Create/update the appropriate controller (`CourseController`, `LessonController`, etc.).
+2. Load or persist models, run validation, and prepare the data needed by the view.
+3. Keep controllers lean with helpers or query scopes and, where necessary, use `withCount`, eager loading, or policies.
 
-#### Step 4: Connect to Database
+#### Step 4: Build the Blade view
 
-1. Create migration (database table)
-2. Create model
-3. Update controller to use model
-4. Replace fake data with real data
+1. Render the real data the controller passes in, using partials/layouts for repeated patterns.
+2. Convert the earlier sketches into Tailwind-based UI while reusing components (`layouts.app`, `components.cards`).
+3. Include conditional UI based on roles/state (e.g., `@auth`, `@if(auth()->user()->role === 'instructor')`).
 
-#### Step 5: Add Authorization
+#### Step 5: Test and polish
 
-1. Add middleware to routes
-2. Add authorization checks in controllers
-3. Test access control
+1. Visit the route in the browser to verify data shows correctly and permissions behave as expected.
+2. Add styling improvements, responsive tweaks, and error messaging.
+3. Run `php artisan route:list` and `php artisan test` (if applicable) to double-check everything works.
 
 ---
 
@@ -300,17 +280,13 @@ lms-app/
 
 ### Checklist for Every Feature
 
--   [ ] **1. Design the UI** (create Blade view with mock data)
--   [ ] **2. Test the view** (create temporary route)
--   [ ] **3. Style it** (add Tailwind classes)
--   [ ] **4. Create proper route** (in `routes/web.php`, mind the order!)
--   [ ] **5. Create controller** (move logic from route)
--   [ ] **6. Create model** (if you need database)
--   [ ] **7. Create migration** (database structure)
--   [ ] **8. Connect everything** (controller → model → view)
--   [ ] **9. Add middleware** (if route needs protection)
--   [ ] **10. Test with real data**
--   [ ] **11. Refine and polish**
+-   [ ] **1. Define the route and middleware** (add path to `routes/web.php`, keep specific routes first)
+-   [ ] **2. Implement controller logic** (load/persist models, validate, authorize)
+-   [ ] **3. Update or create models/migrations** (ensure database matches data needs)
+-   [ ] **4. Build the Blade view** (render real data using layout/components)
+-   [ ] **5. Style with Tailwind** (use shared design tokens and components)
+-   [ ] **6. Apply policies or middleware** (protect instructor/student routes)
+-   [ ] **7. Test via browser/API** (verify permissions, redirects, errors)
 
 ### Quick Reference: Laravel Commands
 
@@ -1049,36 +1025,33 @@ public function store(Request $request, Course $course)
 
 **"I want to add a new page. Where do I start?"**
 
-1. ✅ **Create the view first** (`resources/views/your-page.blade.php`)
-2. ✅ **Add a route** (`routes/web.php` - remember route order!)
-3. ✅ **Test it works** (visit the URL)
-4. ✅ **Add styling** (Tailwind CSS)
-5. ✅ **Create controller** (if you need logic)
-6. ✅ **Add model** (if you need database)
-7. ✅ **Create migration** (if you need new table)
-8. ✅ **Add middleware** (if route needs protection)
+1. ✅ **Plan the route and permissions** (`routes/web.php`, group it under `auth`, `instructor`, or `student` as needed)
+2. ✅ **Implement the controller** (load the models, validate input, guard actions)
+3. ✅ **Build the Blade view** (use the data the controller returns, reuse layouts/components)
+4. ✅ **Style and test in the browser** (Tailwind + responsive tweaks)
+5. ✅ **Add migrations/models** only when new persistence is required
 
 **"I need to show data from the database. How?"**
 
-1. ✅ **Create/use model** (`app/Models/YourModel.php`)
-2. ✅ **In controller**: `$items = YourModel::all();`
+1. ✅ **Use the model** (`app/Models/YourModel.php`)
+2. ✅ **Controller**: `$items = YourModel::all();` or add scopes/with() as needed
 3. ✅ **Pass to view**: `return view('page', compact('items'));`
-4. ✅ **In view**: `@foreach($items as $item) ... @endforeach`
+4. ✅ **Render in Blade**: `@foreach($items as $item) ... @endforeach`
 
 **"I need to save data. How?"**
 
-1. ✅ **Create form in view** (`<form method="POST">`)
-2. ✅ **Add route for POST** (`Route::post('/path', [Controller::class, 'store']);`)
-3. ✅ **In controller**: `YourModel::create([...]);`
-4. ✅ **Redirect**: `return redirect('/path');`
+1. ✅ **Create a POST route** with middleware (e.g., `Route::post('/courses', ...)`)
+2. ✅ **Controller store action**: validate then `YourModel::create([...]);`
+3. ✅ **Redirect or respond**: `return redirect()->route('courses.show', $course);`
+4. ✅ **Show feedback** in the view (session flash, form errors)
 
 **"I'm getting a 404 error on a route. Why?"**
 
 1. ✅ **Check route order** - specific routes must come before parameterized routes
-2. ✅ **Check route name** - make sure it matches
-3. ✅ **Check middleware** - make sure you're authenticated/authorized (if required)
-4. ✅ **Check if route is public** - some routes like `/courses/browse` are public, others require auth
-5. ✅ **Run `php artisan route:list`** - see all registered routes
+2. ✅ **Check route name** - ensure it matches the named route you're referencing
+3. ✅ **Check middleware** - unauthorized users are redirected or receive 403
+4. ✅ **Check access level** - some routes require `auth`, `instructor`, or `student`
+5. ✅ **Run `php artisan route:list`** - inspect the registered routes
 
 **"Can guests view courses?"**
 
@@ -1087,20 +1060,19 @@ Yes! The following routes are public (no login required):
 -   `/courses/browse` - Browse all published courses
 -   `/courses/{course}` - View course details
 
-However, to enroll in a course or view lessons, users must be logged in as a student.
+However, enrolling or managing courses requires authentication with the correct role.
 
 ---
 
 ## Remember
 
-1. **Frontend First**: Always start with the view
-2. **See it work**: Test in browser as soon as possible
-3. **Route order matters**: Specific routes before parameterized routes
-4. **No middleware in constructors**: Apply middleware in routes (Laravel 11+)
-5. **Iterate**: Build, test, refine, repeat
-6. **Keep it simple**: Don't overcomplicate things
-7. **Use our colors**: Stick to the defined color scheme
-8. **Follow conventions**: Naming, structure, patterns
+1. **Define the route before the view**: Route order and middleware come first, then controller/business logic, then Blade.
+2. **Test routes with real data**: Visit the URLs and make sure permissions behave as expected.
+3. **Controllers stay lean**: Fetch/persist models and pass data to views without embedding styling logic.
+4. **Guard access via middleware/policies** (not constructors) so Laravel 11+ route groups handle authorization.
+5. **Reuse shared layouts/components** to keep UI consistent and maintainable.
+6. **Keep color tokens centralized** in `resources/css/app.css` and use Tailwind variables.
+7. **Follow naming conventions**: PascalCase controllers/models, kebab-case views/routes.
 
 ---
 

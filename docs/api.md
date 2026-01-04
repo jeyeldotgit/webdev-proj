@@ -1,6 +1,6 @@
 # API Documentation – SproutLMS
 
-This document outlines the API structure for SproutLMS. Currently, the application uses traditional web routes with Blade templates. This document serves as a reference for future API development.
+This document outlines the API structure for SproutLMS. Currently, the application is a Blade-based web app backed by Laravel routes, controllers, and middleware. The sections below describe the aspirations for a RESTful API layer that can be added later; nothing here is wired up yet.
 
 ---
 
@@ -19,18 +19,16 @@ This document outlines the API structure for SproutLMS. Currently, the applicati
 
 ## Current State
 
-**Status**: Currently, SproutLMS is a traditional web application using:
+**Status**: The entire experience today is delivered through `routes/web.php`, Blade views (`resources/views/`), and middlware-enforced access control (`auth`, `instructor`, `student`). Routes include:
 
--   Blade templates for frontend
--   Session-based authentication
--   Web routes (`routes/web.php`)
+-   `/` landing page view
+-   `/login`, `/register`, `/dashboard` (role-aware)
+-   `/courses/browse`, `/courses/{course}`, plus instructor CRUD routes and lesson nesting under `/courses/{course}`.
+-   `/enrollments` and `/courses/{course}/enroll` guarded by the student middleware.
 
-**Future**: API endpoints can be added for:
+Controllers (`CourseController`, `LessonController`, `EnrollmentController`, etc.) return Blade views or redirects and talk to `App\Models\Course`, `Lesson`, `Enrollment`, etc. There are no API controllers or `routes/api.php` definitions yet.
 
--   Mobile app integration
--   Third-party integrations
--   SPA (Single Page Application) frontend
--   Webhook support
+**Future**: API endpoints can be added for mobile apps, third-party integrations, SPAs, and webhooks, following the sketches in the rest of this document.
 
 ---
 
