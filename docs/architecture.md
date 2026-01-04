@@ -219,6 +219,14 @@ lms-app/
 -   ✅ Automatic progress tracking
 -   ✅ Course progress percentage
 
+#### Public Features
+
+-   ✅ Landing page with functional buttons
+-   ✅ Browse published courses (no login required)
+-   ✅ View course details (no login required)
+-   ✅ Registration and login access
+-   ✅ Conditional UI based on authentication status
+
 #### Database Structure
 
 -   ✅ Users table with roles
@@ -226,6 +234,26 @@ lms-app/
 -   ✅ Lessons table (text/video support)
 -   ✅ Enrollments table
 -   ✅ Progress tracking table
+
+### Route Access Levels
+
+#### Public Routes (No Authentication)
+
+-   `/` - Landing page
+-   `/login` - Login page
+-   `/register` - Registration page
+-   `/courses/browse` - Browse all published courses
+-   `/courses/{course}` - View course details
+
+#### Protected Routes (Authentication Required)
+
+-   `/dashboard` - User dashboard (role-specific)
+-   `/courses` - Instructor's course list (instructor only)
+-   `/courses/create` - Create course (instructor only)
+-   `/courses/{course}/edit` - Edit course (instructor only)
+-   `/courses/{course}/lessons/*` - Lesson management (instructor only)
+-   `/enrollments` - Student enrollments (student only)
+-   `/courses/{course}/enroll` - Enroll in course (student only)
 
 ---
 
@@ -350,11 +378,38 @@ Blade is Laravel's templating engine. It lets you write PHP in a cleaner way.
 
 @auth
     <p>User is logged in</p>
+    <p>Welcome, {{ auth()->user()->name }}!</p>
+@else
+    <p>Please <a href="{{ route('login') }}">login</a> to continue</p>
 @endauth
 
-@if(auth()->user()->role === 'instructor')
+@if(auth()->check() && auth()->user()->role === 'instructor')
     <p>User is an instructor</p>
 @endif
+
+@guest
+    <a href="{{ route('register') }}">Sign Up</a>
+@endguest
+```
+
+#### Conditional Links Based on Auth Status
+
+```blade
+{{-- Show different buttons based on authentication --}}
+@auth
+    <a href="{{ route('dashboard') }}">Go to Dashboard</a>
+@else
+    <a href="{{ route('register') }}">Get Started Free</a>
+@endauth
+
+{{-- Role-based links --}}
+@auth
+    @if(auth()->user()->role === 'student')
+        <a href="{{ route('courses.browse') }}">Browse Courses</a>
+    @else
+        <a href="{{ route('courses.index') }}">My Courses</a>
+    @endif
+@endauth
 ```
 
 #### Loops
@@ -811,10 +866,34 @@ public function edit(Course $course)
 
 ### Pattern 1: List Page (Index)
 
-**Route:**
+**Route (Public Browse):**
 
 ```php
-Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+// Public route - anyone can browse published courses
+Route::get('/courses/browse', [CourseController::class, 'browse'])->name('courses.browse');
+```
+
+**Controller:**
+
+```php
+public function browse()
+{
+    $courses = Course::where('is_published', true)
+        ->with(['instructor', 'lessons'])
+        ->withCount('lessons')
+        ->latest()
+        ->get();
+    return view('courses.browse', compact('courses'));
+}
+```
+
+**Route (Instructor's Courses):**
+
+```php
+// Protected route - only instructors can see their own courses
+Route::middleware(['auth', 'instructor'])->group(function () {
+    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+});
 ```
 
 **Controller:**
@@ -840,9 +919,10 @@ public function index()
 
 ### Pattern 2: Detail Page (Show)
 
-**Route:**
+**Route (Public - No Auth Required):**
 
 ```php
+// Public route - guests can view course details
 Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
 ```
 
@@ -852,7 +932,16 @@ Route::get('/courses/{course}', [CourseController::class, 'show'])->name('course
 public function show(Course $course)
 {
     $course->load(['instructor', 'lessons']);
-    return view('courses.show', compact('course'));
+
+    // Check enrollment only if user is authenticated
+    $isEnrolled = false;
+    if (Auth::check() && Auth::user()->role === 'student') {
+        $isEnrolled = $course->enrollments()
+            ->where('student_id', Auth::id())
+            ->exists();
+    }
+
+    return view('courses.show', compact('course', 'isEnrolled'));
 }
 ```
 
@@ -861,6 +950,17 @@ public function show(Course $course)
 ```blade
 <h1>{{ $course->title }}</h1>
 <p>{{ $course->description }}</p>
+
+@auth
+    @if(auth()->user()->role === 'student' && !$isEnrolled)
+        <form method="POST" action="{{ route('enrollments.store', $course) }}">
+            @csrf
+            <button type="submit">Enroll Now</button>
+        </form>
+    @endif
+@else
+    <a href="{{ route('register') }}">Sign up to enroll</a>
+@endauth
 ```
 
 ### Pattern 3: Create Form
@@ -976,8 +1076,18 @@ public function store(Request $request, Course $course)
 
 1. ✅ **Check route order** - specific routes must come before parameterized routes
 2. ✅ **Check route name** - make sure it matches
-3. ✅ **Check middleware** - make sure you're authenticated/authorized
-4. ✅ **Run `php artisan route:list`** - see all registered routes
+3. ✅ **Check middleware** - make sure you're authenticated/authorized (if required)
+4. ✅ **Check if route is public** - some routes like `/courses/browse` are public, others require auth
+5. ✅ **Run `php artisan route:list`** - see all registered routes
+
+**"Can guests view courses?"**
+
+Yes! The following routes are public (no login required):
+
+-   `/courses/browse` - Browse all published courses
+-   `/courses/{course}` - View course details
+
+However, to enroll in a course or view lessons, users must be logged in as a student.
 
 ---
 
