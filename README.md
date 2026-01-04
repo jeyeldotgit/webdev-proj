@@ -1,4 +1,19 @@
-# Laravel University Project
+# SproutLMS
+
+A lightweight, open-source Learning Management System built with Laravel. Designed for individual creators and small teams who need a "no-fuss" platform to host video or text-based lessons, track student enrollment, and monitor basic completion progress.
+
+**Philosophy**: Start small, grow big. Fundamental Learning.
+
+## Features
+
+-   🎓 **Course Management** - Create and manage courses with text or video lessons
+-   👥 **Student Enrollment** - Easy enrollment system for students
+-   📊 **Progress Tracking** - Monitor student completion automatically
+-   🎨 **Modern UI** - Clean, responsive design with Tailwind CSS
+-   🔐 **Role-Based Access** - Separate dashboards for instructors and students
+-   🌐 **Public Browsing** - Guests can browse published courses without login
+
+## Quick Start
 
 Welcome to the team! This repository is our monorepo for a collaborative Laravel project.
 
@@ -137,8 +152,39 @@ Use Vite for styles and scripts:
 
 ## Common Commands
 
-| Command                  | Description                        |
-| ------------------------ | ---------------------------------- |
-| `php artisan serve`      | Start the local development server |
-| `npm run dev`            | Watch and compile frontend assets  |
-| `php artisan route:list` | View all available routes          |
+| Command                     | Description                           |
+| --------------------------- | ------------------------------------- |
+| `php artisan serve`         | Start the local development server    |
+| `npm run dev`               | Watch and compile frontend assets     |
+| `npm run build`             | Build frontend assets for production  |
+| `php artisan route:list`    | View all available routes             |
+| `php artisan migrate`       | Run database migrations               |
+| `php artisan migrate:fresh` | Drop all tables and re-run migrations |
+
+## Application Routes
+
+### Public Routes (No Login Required)
+
+-   `/` - Landing page
+-   `/login` - Login page
+-   `/register` - Registration page
+-   `/courses/browse` - Browse published courses
+-   `/courses/{course}` - View course details
+
+### Protected Routes (Login Required)
+
+-   `/dashboard` - User dashboard (role-specific)
+-   `/courses` - Instructor's course list (instructor only)
+-   `/courses/create` - Create new course (instructor only)
+-   `/enrollments` - Student's enrolled courses (student only)
+
+## User Roles
+
+-   **Student** - Can browse courses, enroll, and track progress
+-   **Instructor** - Can create courses, manage lessons, and view enrolled students
+
+## Documentation
+
+-   [Architecture Guide](docs/architecture.md) - Development approach and patterns
+-   [API Documentation](docs/api.md) - API structure (for future implementation)
+-   [Git Rules](docs/gitrules.md) - Git workflow and conventions

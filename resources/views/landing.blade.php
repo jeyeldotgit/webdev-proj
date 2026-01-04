@@ -18,7 +18,11 @@
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="#features" class="text-neutral-600 hover:text-neutral-900 transition-colors">Features</a>
                     <a href="#about" class="text-neutral-600 hover:text-neutral-900 transition-colors">About</a>
-                    <a href="#get-started" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Get Started</a>
+                    @auth
+                        <a href="{{ route('dashboard') }}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Dashboard</a>
+                    @else
+                        <a href="{{ route('register') }}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Get Started</a>
+                    @endauth
                 </div>
                 <button class="md:hidden text-neutral-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,9 +45,15 @@
                     Host your courses, track progress, and focus on what matters—teaching.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <a href="#get-started" class="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors shadow-lg hover:shadow-xl">
-                        Get Started Free
-                    </a>
+                    @auth
+                        <a href="{{ route('dashboard') }}" class="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors shadow-lg hover:shadow-xl">
+                            Go to Dashboard
+                        </a>
+                    @else
+                        <a href="{{ route('register') }}" class="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors shadow-lg hover:shadow-xl">
+                            Get Started Free
+                        </a>
+                    @endauth
                     <a href="#features" class="border-2 border-neutral-300 text-neutral-700 px-8 py-4 rounded-lg text-lg font-semibold hover:border-neutral-400 transition-colors">
                         Learn More
                     </a>
@@ -160,11 +170,17 @@
                 Get started in minutes, not days.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#" class="bg-white text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-neutral-100 transition-colors shadow-lg">
-                    Get Started Free
-                </a>
-                <a href="#" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white/10 transition-colors">
-                    View Documentation
+                @auth
+                    <a href="{{ route('dashboard') }}" class="bg-white text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-neutral-100 transition-colors shadow-lg">
+                        Go to Dashboard
+                    </a>
+                @else
+                    <a href="{{ route('register') }}" class="bg-white text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-neutral-100 transition-colors shadow-lg">
+                        Get Started Free
+                    </a>
+                @endauth
+                <a href="{{ route('courses.browse') }}" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white/10 transition-colors">
+                    Browse Courses
                 </a>
             </div>
         </div>
@@ -185,23 +201,45 @@
                     <ul class="space-y-2 text-sm">
                         <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
                         <li><a href="#about" class="hover:text-white transition-colors">About</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                        @auth
+                            <li><a href="{{ route('dashboard') }}" class="hover:text-white transition-colors">Dashboard</a></li>
+                        @else
+                            <li><a href="{{ route('register') }}" class="hover:text-white transition-colors">Sign Up</a></li>
+                        @endauth
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-white font-semibold mb-4">Community</h4>
+                    <h4 class="text-white font-semibold mb-4">Quick Links</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-white transition-colors">GitHub</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Discord</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Contributors</a></li>
+                        @auth
+                            @if(auth()->user()->role === 'student')
+                                <li><a href="{{ route('courses.browse') }}" class="hover:text-white transition-colors">Browse Courses</a></li>
+                                <li><a href="{{ route('enrollments.index') }}" class="hover:text-white transition-colors">My Courses</a></li>
+                            @else
+                                <li><a href="{{ route('courses.index') }}" class="hover:text-white transition-colors">My Courses</a></li>
+                                <li><a href="{{ route('courses.create') }}" class="hover:text-white transition-colors">Create Course</a></li>
+                            @endif
+                        @else
+                            <li><a href="{{ route('courses.browse') }}" class="hover:text-white transition-colors">Browse Courses</a></li>
+                            <li><a href="{{ route('login') }}" class="hover:text-white transition-colors">Login</a></li>
+                        @endauth
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-white font-semibold mb-4">Legal</h4>
+                    <h4 class="text-white font-semibold mb-4">Account</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Terms</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">License</a></li>
+                        @auth
+                            <li><a href="{{ route('dashboard') }}" class="hover:text-white transition-colors">Dashboard</a></li>
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="hover:text-white transition-colors text-left">Logout</button>
+                                </form>
+                            </li>
+                        @else
+                            <li><a href="{{ route('login') }}" class="hover:text-white transition-colors">Login</a></li>
+                            <li><a href="{{ route('register') }}" class="hover:text-white transition-colors">Sign Up</a></li>
+                        @endauth
                     </ul>
                 </div>
             </div>
