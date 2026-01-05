@@ -151,3 +151,47 @@ docs: <description>
 -   Clean history > fast history
 
 > "If it’s hard to explain in a commit message, it’s probably doing too much."
+
+## Git Collaboration Workflow
+
+**Important:** Never push directly to the main branch. To avoid breaking the project, always use the workflow below.
+
+### 1. Update Your Local Main Branch
+
+Before starting any new work, make sure your local code is up to date:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+### 2. Create a Feature Branch
+
+Create a branch named after the task you are working on:
+
+```bash
+git checkout -b feature/your-task-name
+```
+
+### 3. Work and Commit
+
+Save your progress with clear and descriptive commit messages:
+
+```bash
+git add .
+git commit -m "Add: brief description of what you did"
+```
+
+### 4. Push and Create a Pull Request
+
+Upload your branch to GitHub:
+
+```bash
+git push origin feature/your-task-name
+```
+
+Then:
+
+1. Go to GitHub.com
+2. Click "Compare & pull request"
+3. Wait for the project lead to review and merge your code

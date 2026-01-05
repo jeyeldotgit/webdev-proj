@@ -18,9 +18,12 @@
                 
                 @auth
                 <div class="hidden md:flex items-center space-x-6">
-                    <a href="{{ route('dashboard') }}" class="text-neutral-600 hover:text-neutral-900 transition-colors {{ request()->routeIs('dashboard') ? 'text-primary-600 font-semibold' : '' }}">Dashboard</a>
+                    <a href="{{ route('dashboard') }}" class="text-neutral-600 hover:text-neutral-900 transition-colors {{ request()->routeIs('dashboard') || request()->routeIs('admin.*') ? 'text-primary-600 font-semibold' : '' }}">Dashboard</a>
                     
-                    @if(auth()->user()->role === 'instructor')
+                    @if(auth()->user()->role === 'admin')
+                        <a href="{{ route('admin.students.index') }}" class="text-neutral-600 hover:text-neutral-900 transition-colors {{ request()->routeIs('admin.*') ? 'text-primary-600 font-semibold' : '' }}">Manage Students</a>
+                        <a href="{{ route('courses.index') }}" class="text-neutral-600 hover:text-neutral-900 transition-colors {{ request()->routeIs('courses.*') ? 'text-primary-600 font-semibold' : '' }}">All Courses</a>
+                    @elseif(auth()->user()->role === 'instructor')
                         <a href="{{ route('courses.index') }}" class="text-neutral-600 hover:text-neutral-900 transition-colors {{ request()->routeIs('courses.*') ? 'text-primary-600 font-semibold' : '' }}">My Courses</a>
                     @else
                         <a href="{{ route('courses.browse') }}" class="text-neutral-600 hover:text-neutral-900 transition-colors {{ request()->routeIs('courses.browse') ? 'text-primary-600 font-semibold' : '' }}">Browse Courses</a>

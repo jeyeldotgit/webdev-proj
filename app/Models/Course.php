@@ -40,4 +40,9 @@ class Course extends Model
         return $this->belongsToMany(User::class, 'enrollments', 'course_id', 'student_id')
             ->withTimestamps();
     }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
 }

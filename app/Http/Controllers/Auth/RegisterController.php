@@ -22,7 +22,7 @@ class RegisterController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
-            'role' => 'required|in:student,instructor',
+            'role' => 'required|in:student,instructor', // Admin role cannot be registered publicly
         ]);
 
         $user = User::create([

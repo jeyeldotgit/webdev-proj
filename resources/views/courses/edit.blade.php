@@ -29,6 +29,23 @@
                 @enderror
             </div>
 
+            @if(auth()->user()->role === 'admin')
+            <div class="mb-6">
+                <label for="instructor_id" class="block text-sm font-medium text-neutral-700 mb-2">Assign Instructor</label>
+                <select name="instructor_id" id="instructor_id"
+                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-primary-600">
+                    @foreach(\App\Models\User::where('role', 'instructor')->orderBy('name')->get() as $instructor)
+                        <option value="{{ $instructor->id }}" {{ old('instructor_id', $course->instructor_id) == $instructor->id ? 'selected' : '' }}>
+                            {{ $instructor->name }} ({{ $instructor->email }})
+                        </option>
+                    @endforeach
+                </select>
+                @error('instructor_id')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+            @endif
+
             <div class="mb-6">
                 <label for="thumbnail" class="block text-sm font-medium text-neutral-700 mb-2">Thumbnail URL (optional)</label>
                 <input type="url" name="thumbnail" id="thumbnail" value="{{ old('thumbnail', $course->thumbnail) }}"

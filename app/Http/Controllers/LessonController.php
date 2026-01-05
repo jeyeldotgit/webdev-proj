@@ -11,8 +11,8 @@ class LessonController extends Controller
 {
     public function index(Course $course)
     {
-        // Only instructor can access this
-        if (Auth::user()->role !== 'instructor' || Auth::id() !== $course->instructor_id) {
+        // Admin can access any course, instructors can only access their own
+        if (Auth::user()->role !== 'admin' && (Auth::user()->role !== 'instructor' || Auth::id() !== $course->instructor_id)) {
             abort(403);
         }
         
@@ -22,7 +22,8 @@ class LessonController extends Controller
 
     public function create(Course $course)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Only instructors can create lessons (content creation)
+        if (Auth::user()->role !== 'instructor' || Auth::id() !== $course->instructor_id) {
             abort(403);
         }
         return view('lessons.create', compact('course'));
@@ -30,7 +31,8 @@ class LessonController extends Controller
 
     public function store(Request $request, Course $course)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Only instructors can create lessons (content creation)
+        if (Auth::user()->role !== 'instructor' || Auth::id() !== $course->instructor_id) {
             abort(403);
         }
 
@@ -62,11 +64,16 @@ class LessonController extends Controller
                 return redirect()->route('courses.show', $course)
                     ->with('error', 'You must enroll in this course to view lessons.');
             }
-        } else {
+        } elseif (Auth::user()->role === 'instructor') {
             // Instructor must own the course
             if (Auth::id() !== $course->instructor_id) {
                 abort(403);
             }
+        } elseif (Auth::user()->role === 'admin') {
+            // Admin can view any lesson
+            // No additional check needed
+        } else {
+            abort(403);
         }
 
         $lesson->load('course');
@@ -97,7 +104,8 @@ class LessonController extends Controller
 
     public function edit(Course $course, Lesson $lesson)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Admin can edit any lesson, instructors can only edit their own
+        if (Auth::user()->role !== 'admin' && (Auth::user()->role !== 'instructor' || Auth::id() !== $course->instructor_id)) {
             abort(403);
         }
         return view('lessons.edit', compact('course', 'lesson'));
@@ -105,7 +113,8 @@ class LessonController extends Controller
 
     public function update(Request $request, Course $course, Lesson $lesson)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Admin can update any lesson, instructors can only update their own
+        if (Auth::user()->role !== 'admin' && (Auth::user()->role !== 'instructor' || Auth::id() !== $course->instructor_id)) {
             abort(403);
         }
 
@@ -124,7 +133,8 @@ class LessonController extends Controller
 
     public function destroy(Course $course, Lesson $lesson)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Admin can delete any lesson, instructors can only delete their own
+        if (Auth::user()->role !== 'admin' && (Auth::user()->role !== 'instructor' || Auth::id() !== $course->instructor_id)) {
             abort(403);
         }
         $lesson->delete();
