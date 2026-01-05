@@ -11,10 +11,18 @@ class CourseController extends Controller
 {
     public function index()
     {
-        $courses = Course::where('instructor_id', Auth::id())
-            ->withCount(['lessons', 'enrollments'])
-            ->latest()
-            ->get();
+        // Admin can see all courses, instructors see only their own
+        if (Auth::user()->role === 'admin') {
+            $courses = Course::with(['instructor'])
+                ->withCount(['lessons', 'enrollments'])
+                ->latest()
+                ->get();
+        } else {
+            $courses = Course::where('instructor_id', Auth::id())
+                ->withCount(['lessons', 'enrollments'])
+                ->latest()
+                ->get();
+        }
 
         return view('courses.index', compact('courses'));
     }
@@ -32,7 +40,15 @@ class CourseController extends Controller
 
     public function create()
     {
-        return view('courses.create');
+        // Get instructors list for admin to assign
+        $instructors = null;
+        if (Auth::user()->role === 'admin') {
+            $instructors = \App\Models\User::where('role', 'instructor')
+                ->orderBy('name')
+                ->get();
+        }
+        
+        return view('courses.create', compact('instructors'));
     }
 
     public function store(Request $request)
@@ -41,10 +57,16 @@ class CourseController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'thumbnail' => 'nullable|string|max:255',
+            'instructor_id' => 'nullable|exists:users,id', // Admin can assign instructor
         ]);
 
+        // Admin can assign instructor, otherwise use current user
+        $instructorId = Auth::user()->role === 'admin' && $validated['instructor_id']
+            ? $validated['instructor_id']
+            : Auth::id();
+
         $course = Course::create([
-            'instructor_id' => Auth::id(),
+            'instructor_id' => $instructorId,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'thumbnail' => $validated['thumbnail'] ?? null,
@@ -58,7 +80,7 @@ class CourseController extends Controller
     {
         $course->load(['instructor', 'lessons' => function($query) {
             $query->orderBy('order');
-        }]);
+        }, 'assignments']);
 
         $isEnrolled = false;
         if (Auth::check() && Auth::user()->role === 'student') {
@@ -72,7 +94,8 @@ class CourseController extends Controller
 
     public function edit(Course $course)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Admin can edit any course, instructors can only edit their own
+        if (Auth::user()->role !== 'admin' && Auth::id() !== $course->instructor_id) {
             abort(403);
         }
         return view('courses.edit', compact('course'));
@@ -80,7 +103,8 @@ class CourseController extends Controller
 
     public function update(Request $request, Course $course)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Admin can update any course, instructors can only update their own
+        if (Auth::user()->role !== 'admin' && Auth::id() !== $course->instructor_id) {
             abort(403);
         }
 
@@ -89,7 +113,14 @@ class CourseController extends Controller
             'description' => 'nullable|string',
             'thumbnail' => 'nullable|string|max:255',
             'is_published' => 'boolean',
+            'instructor_id' => 'nullable|exists:users,id', // Admin can reassign instructor
         ]);
+
+        // Only admin can change instructor
+        if (Auth::user()->role === 'admin' && isset($validated['instructor_id'])) {
+            $course->instructor_id = $validated['instructor_id'];
+            unset($validated['instructor_id']);
+        }
 
         $course->update($validated);
 
@@ -98,7 +129,8 @@ class CourseController extends Controller
 
     public function destroy(Course $course)
     {
-        if (Auth::id() !== $course->instructor_id) {
+        // Admin can delete any course, instructors can only delete their own
+        if (Auth::user()->role !== 'admin' && Auth::id() !== $course->instructor_id) {
             abort(403);
         }
         $course->delete();

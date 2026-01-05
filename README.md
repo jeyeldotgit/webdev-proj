@@ -9,8 +9,10 @@ A lightweight, open-source Learning Management System built with Laravel. Design
 -   🎓 **Course Management** - Create and manage courses with text or video lessons
 -   👥 **Student Enrollment** - Easy enrollment system for students
 -   📊 **Progress Tracking** - Monitor student completion automatically
+-   📝 **Assignments** - Instructors can create assignments, students can submit, and instructors can grade
+-   👨‍💼 **Admin Panel** - Comprehensive admin dashboard for managing students, courses, and enrollments
 -   🎨 **Modern UI** - Clean, responsive design with Tailwind CSS
--   🔐 **Role-Based Access** - Separate dashboards for instructors and students
+-   🔐 **Role-Based Access** - Separate dashboards for admins, instructors, and students
 -   🌐 **Public Browsing** - Guests can browse published courses without login
 
 ## Quick Start
@@ -30,9 +32,9 @@ Before starting, ensure you have the following installed:
 
 *   if you have laragon just use the laragon terminal.
 
-## Initial Setup
+## Local Development Setup
 
-If you are setting up the project for the first time, run the following commands in order.
+Follow these steps to get SproutLMS running on your local machine.
 
 ### 1. Clone the Repository
 
@@ -54,7 +56,18 @@ npm install
 cp .env.example .env
 ```
 
-Open the `.env` file and update your database credentials if necessary.
+Open the `.env` file and update your database credentials:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=lms_app
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+**Note**: If you're using Laragon, the database credentials are typically already configured.
 
 ### 4. Generate Application Key
 
@@ -68,55 +81,89 @@ php artisan key:generate
 php artisan migrate
 ```
 
-### 6. Compile Frontend Assets
+This will create all necessary tables: `users`, `courses`, `lessons`, `enrollments`, `progress`, `assignments`, and `assignment_submissions`.
+
+### 6. Create an Admin User
+
+**Important**: The admin role cannot be registered through the public registration form for security reasons. You must create an admin user manually using Laravel Tinker.
+
+#### What is Laravel Tinker?
+
+Laravel Tinker is Laravel's REPL (Read-Eval-Print Loop) - an interactive shell that allows you to execute PHP code directly against your Laravel application. It's the recommended way to create admin users securely.
+
+#### Steps to Create Admin User:
+
+1. **Open Laravel Tinker**:
+
+```bash
+php artisan tinker
+```
+
+2. **In the Tinker console, run the following commands**:
+
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+User::create([
+    'name' => 'Admin User',
+    'email' => 'admin@example.com',
+    'password' => Hash::make('password'),
+    'role' => 'admin',
+]);
+```
+
+3. **Exit Tinker**:
+
+```bash
+exit
+```
+
+**Default Admin Credentials** (change immediately in production):
+
+-   **Email**: `admin@example.com`
+-   **Password**: `password`
+
+⚠️ **Security Note**: Always change the default password after first login in production environments!
+
+### 7. Compile Frontend Assets
+
+In a separate terminal window, run:
 
 ```bash
 npm run dev
 ```
 
-## Git Workflow
+This will watch for changes and compile your CSS and JavaScript assets.
 
-**Important:** Never push directly to the main branch. To avoid breaking the project, always use the workflow below.
+### 8. Start the Development Server
 
-### 1. Update Your Local Main Branch
-
-Before starting any new work, make sure your local code is up to date:
+If you're using Laragon, the server is typically already running. Otherwise, start Laravel's development server:
 
 ```bash
-git checkout main
-git pull origin main
+php artisan serve
 ```
 
-### 2. Create a Feature Branch
+The application will be available at `http://localhost:8000` or your Laragon domain (e.g., `http://lms-app.test`).
 
-Create a branch named after the task you are working on:
+### 9. Access the Application
 
-```bash
-git checkout -b feature/your-task-name
-```
+1. **Login as Admin**: Go to `/login` and use the admin credentials you created
+2. **Create Test Users**: You can register student and instructor accounts through `/register`
+3. **Admin Dashboard**: After logging in as admin, you'll be redirected to `/admin`
 
-### 3. Work and Commit
+## Why Can't Admins Sign Up?
 
-Save your progress with clear and descriptive commit messages:
+The admin role is restricted from public registration for security reasons:
 
-```bash
-git add .
-git commit -m "Add: brief description of what you did"
-```
+1. **Prevents Unauthorized Access**: Admin accounts have full system access, including the ability to manage all users, courses, and system settings.
+2. **Controlled Creation**: By requiring manual creation via Tinker or seeders, only authorized developers/system administrators can create admin accounts.
+3. **Audit Trail**: Manual creation ensures there's a clear record of who created admin accounts and when.
 
-### 4. Push and Create a Pull Request
+**Alternative Methods** (if you prefer not to use Tinker):
 
-Upload your branch to GitHub:
-
-```bash
-git push origin feature/your-task-name
-```
-
-Then:
-
-1. Go to GitHub.com
-2. Click "Compare & pull request"
-3. Wait for the project lead to review and merge your code
+-   Use database seeders: `php artisan make:seeder AdminSeeder`
+-   Direct database insertion (not recommended for production)
 
 ## Frontend Guidelines (Blade)
 
@@ -152,14 +199,16 @@ Use Vite for styles and scripts:
 
 ## Common Commands
 
-| Command                     | Description                           |
-| --------------------------- | ------------------------------------- |
-| `php artisan serve`         | Start the local development server    |
-| `npm run dev`               | Watch and compile frontend assets     |
-| `npm run build`             | Build frontend assets for production  |
-| `php artisan route:list`    | View all available routes             |
-| `php artisan migrate`       | Run database migrations               |
-| `php artisan migrate:fresh` | Drop all tables and re-run migrations |
+| Command                     | Description                                    |
+| --------------------------- | ---------------------------------------------- |
+| `php artisan serve`         | Start the local development server             |
+| `npm run dev`               | Watch and compile frontend assets              |
+| `npm run build`             | Build frontend assets for production           |
+| `php artisan route:list`    | View all available routes                      |
+| `php artisan migrate`       | Run database migrations                        |
+| `php artisan migrate:fresh` | Drop all tables and re-run migrations          |
+| `php artisan tinker`        | Open Laravel Tinker (for creating admin users) |
+| `php artisan db:seed`       | Run database seeders                           |
 
 ## Application Routes
 
@@ -167,24 +216,66 @@ Use Vite for styles and scripts:
 
 -   `/` - Landing page
 -   `/login` - Login page
--   `/register` - Registration page
+-   `/register` - Registration page (student/instructor only)
 -   `/courses/browse` - Browse published courses
 -   `/courses/{course}` - View course details
 
 ### Protected Routes (Login Required)
 
--   `/dashboard` - User dashboard (role-specific)
--   `/courses` - Instructor's course list (instructor only)
--   `/courses/create` - Create new course (instructor only)
--   `/enrollments` - Student's enrolled courses (student only)
+#### Admin Routes
+
+-   `/admin` - Admin dashboard
+-   `/admin/students` - Manage all students
+-   `/admin/students/create` - Create new student account
+-   `/admin/students/{student}` - View/edit student details
+
+#### Instructor Routes
+
+-   `/dashboard` - Instructor dashboard (redirects to `/admin` for admins)
+-   `/courses` - Course list (instructor's own courses, or all courses for admins)
+-   `/courses/create` - Create new course
+-   `/courses/{course}/lessons` - Manage lessons
+-   `/courses/{course}/assignments` - Manage assignments
+-   `/courses/{course}/assignments/{assignment}` - View/grade submissions
+
+#### Student Routes
+
+-   `/dashboard` - Student dashboard
+-   `/enrollments` - Enrolled courses
+-   `/courses/{course}/enroll` - Enroll in a course
+-   `/courses/{course}/assignments/{assignment}` - View and submit assignments
 
 ## User Roles
 
--   **Student** - Can browse courses, enroll, and track progress
--   **Instructor** - Can create courses, manage lessons, and view enrolled students
+-   **Admin** - Can manage all courses, students, and assign instructors to courses. Admins cannot be registered via public registration.
+-   **Instructor** - Can create courses, manage lessons, create assignments, and grade student submissions
+-   **Student** - Can browse courses, enroll, submit assignments, and track lesson progress
+
+## Quick Reference
+
+### Creating Users
+
+**Admin** (via Tinker):
+
+```bash
+php artisan tinker
+User::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('password'), 'role' => 'admin']);
+```
+
+**Student/Instructor**: Register via `/register` page
+
+### Testing the Application
+
+1. **As Admin**: Login with admin credentials → Access `/admin` dashboard
+2. **As Instructor**: Register as instructor → Create courses → Add lessons → Create assignments
+3. **As Student**: Register as student → Browse courses → Enroll → Submit assignments
 
 ## Documentation
 
--   [Architecture Guide](docs/architecture.md) - Development approach and patterns
--   [API Documentation](docs/api.md) - API structure (for future implementation)
+-   [Architecture Guide](docs/architecture.md) - Development approach, patterns, and database schema
+-   [API Documentation](docs/api.md) - API structure and patterns (for future implementation)
 -   [Git Rules](docs/gitrules.md) - Git workflow and conventions
+
+## Support
+
+For issues, questions, or contributions, please refer to the project's issue tracker or contact the development team.

@@ -28,15 +28,27 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
-    // Instructor-only course routes (must be before /courses/{course})
-    Route::middleware('instructor')->group(function () {
-        Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
-        Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
-        Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
-        Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
-        Route::put('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
-        Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
+    // Admin routes
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\AdminController::class, 'index'])->name('dashboard');
+        Route::get('/students', [\App\Http\Controllers\AdminController::class, 'students'])->name('students.index');
+        Route::get('/students/create', [\App\Http\Controllers\AdminController::class, 'createStudent'])->name('students.create');
+        Route::post('/students', [\App\Http\Controllers\AdminController::class, 'storeStudent'])->name('students.store');
+        Route::get('/students/{student}', [\App\Http\Controllers\AdminController::class, 'showStudent'])->name('students.show');
+        Route::get('/students/{student}/edit', [\App\Http\Controllers\AdminController::class, 'editStudent'])->name('students.edit');
+        Route::put('/students/{student}', [\App\Http\Controllers\AdminController::class, 'updateStudent'])->name('students.update');
+        Route::delete('/students/{student}', [\App\Http\Controllers\AdminController::class, 'destroyStudent'])->name('students.destroy');
+        Route::post('/students/{student}/enroll', [\App\Http\Controllers\AdminController::class, 'enrollStudent'])->name('students.enroll');
+        Route::delete('/students/{student}/courses/{course}/unenroll', [\App\Http\Controllers\AdminController::class, 'unenrollStudent'])->name('students.unenroll');
     });
+    
+    // Course routes - Admin and Instructor can access (must be before /courses/{course})
+    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+    Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
+    Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
+    Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
+    Route::put('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
+    Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
 
     // Lesson routes (nested under courses)
     Route::prefix('courses/{course}')->group(function () {
@@ -51,6 +63,30 @@ Route::middleware('auth')->group(function () {
         
         // View lesson (accessible to enrolled students and instructors) - must be after /lessons/create
         Route::get('/lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
+
+        // Assignment routes (nested under courses)
+        // Instructor-only assignment management routes (must be before /assignments/{assignment})
+        Route::middleware('instructor')->group(function () {
+            Route::get('/assignments', [\App\Http\Controllers\AssignmentController::class, 'index'])->name('assignments.index');
+            Route::get('/assignments/create', [\App\Http\Controllers\AssignmentController::class, 'create'])->name('assignments.create');
+            Route::post('/assignments', [\App\Http\Controllers\AssignmentController::class, 'store'])->name('assignments.store');
+            Route::get('/assignments/{assignment}/edit', [\App\Http\Controllers\AssignmentController::class, 'edit'])->name('assignments.edit');
+            Route::put('/assignments/{assignment}', [\App\Http\Controllers\AssignmentController::class, 'update'])->name('assignments.update');
+            Route::delete('/assignments/{assignment}', [\App\Http\Controllers\AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        });
+
+        // View assignment (accessible to enrolled students and instructors) - must be after /assignments/create
+        Route::get('/assignments/{assignment}', [\App\Http\Controllers\AssignmentController::class, 'show'])->name('assignments.show');
+
+        // Assignment submission routes
+        Route::middleware('student')->group(function () {
+            Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\AssignmentSubmissionController::class, 'store'])->name('assignment-submissions.store');
+        });
+
+        // Grade assignment (instructor only)
+        Route::middleware('instructor')->group(function () {
+            Route::put('/assignments/{assignment}/submissions/{submission}', [\App\Http\Controllers\AssignmentSubmissionController::class, 'update'])->name('assignment-submissions.update');
+        });
     });
 
     // Student-only enrollment routes

@@ -34,6 +34,8 @@
                 + Add Lesson
             </a>
         </div>
+    @else
+        <h2 class="text-2xl font-bold text-neutral-900 mb-6">Lessons</h2>
     @endif
 
     @if($course->lessons->count() > 0)
@@ -92,6 +94,63 @@
                     Enroll Now
                 </button>
             </form>
+        </div>
+    @endif
+
+    <!-- Assignments Section -->
+    @if(auth()->check() && ($isEnrolled || auth()->user()->role === 'instructor' || auth()->user()->role === 'admin'))
+        <div class="mt-12">
+            @if(auth()->check() && auth()->user()->role === 'instructor' && auth()->id() === $course->instructor_id)
+                <div class="mb-6 flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-neutral-900">Assignments</h2>
+                    <a href="{{ route('assignments.create', $course) }}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+                        + Create Assignment
+                    </a>
+                </div>
+            @else
+                <h2 class="text-2xl font-bold text-neutral-900 mb-6">Assignments</h2>
+            @endif
+
+            @php
+                $assignments = $course->assignments()->withCount('submissions')->latest()->get();
+            @endphp
+
+            @if($assignments->count() > 0)
+                <div class="space-y-3">
+                    @foreach($assignments as $assignment)
+                        <div class="bg-white rounded-lg shadow-sm border border-neutral-200 p-4 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-neutral-900">{{ $assignment->title }}</h3>
+                                    <p class="text-sm text-neutral-600 mt-1">
+                                        Max Score: {{ $assignment->max_score }} points
+                                        @if($assignment->due_date)
+                                            • Due: {{ $assignment->due_date->format('M d, Y') }}
+                                        @endif
+                                    </p>
+                                </div>
+                                <a href="{{ route('assignments.show', [$course, $assignment]) }}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-sm">
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-4">
+                    <a href="{{ route('assignments.index', $course) }}" class="text-primary-600 hover:text-primary-700 text-sm">
+                        View all assignments →
+                    </a>
+                </div>
+            @else
+                <div class="bg-white rounded-xl shadow-sm border border-neutral-200 p-12 text-center">
+                    <p class="text-neutral-600">No assignments yet.</p>
+                    @if(auth()->check() && auth()->user()->role === 'instructor' && auth()->id() === $course->instructor_id)
+                        <a href="{{ route('assignments.create', $course) }}" class="inline-block mt-4 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
+                            Create First Assignment
+                        </a>
+                    @endif
+                </div>
+            @endif
         </div>
     @endif
 </div>

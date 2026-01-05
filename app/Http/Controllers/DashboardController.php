@@ -13,7 +13,9 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role === 'instructor') {
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->role === 'instructor') {
             $courses = Course::where('instructor_id', $user->id)
                 ->withCount('lessons')
                 ->withCount('enrollments')
