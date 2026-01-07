@@ -247,6 +247,105 @@ In terms of relationships:
 -   A **User (student)** **has many** `AssignmentSubmission`.
 -   An **Assignment** **has many** `AssignmentSubmission`.
 
+### Entity Relationship Diagram (Visual)
+
+```mermaid
+erDiagram
+    User ||--o{ Course : "instructor_id (creates)"
+    User ||--o{ Assignment : "instructor_id (creates)"
+    User ||--o{ Enrollment : "student_id (enrolls)"
+    User ||--o{ Progress : "student_id (tracks)"
+    User ||--o{ AssignmentSubmission : "student_id (submits)"
+    User ||--o{ AssignmentSubmission : "graded_by (grades)"
+
+    Course ||--o{ Lesson : "has many"
+    Course ||--o{ Enrollment : "has many"
+    Course ||--o{ Assignment : "has many"
+
+    Lesson ||--o{ Progress : "has many"
+
+    Assignment ||--o{ AssignmentSubmission : "has many"
+
+    User {
+        int id PK
+        string name
+        string email
+        string password
+        enum role "admin|student|instructor"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    Course {
+        int id PK
+        int instructor_id FK
+        string title
+        text description
+        string thumbnail
+        boolean is_published
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    Lesson {
+        int id PK
+        int course_id FK
+        string title
+        text content
+        enum type "text|video"
+        string video_url
+        int order
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    Enrollment {
+        int id PK
+        int student_id FK
+        int course_id FK
+        timestamp enrolled_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    Progress {
+        int id PK
+        int student_id FK
+        int lesson_id FK
+        boolean is_completed
+        timestamp completed_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    Assignment {
+        int id PK
+        int course_id FK
+        int instructor_id FK
+        string title
+        text description
+        int max_score
+        timestamp due_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    AssignmentSubmission {
+        int id PK
+        int assignment_id FK
+        int student_id FK
+        text submission_text
+        string attachment
+        timestamp submitted_at
+        decimal grade
+        text feedback
+        int graded_by FK
+        timestamp graded_at
+        timestamp created_at
+        timestamp updated_at
+    }
+```
+
 ---
 
 ## Request Flow & Application Layers
