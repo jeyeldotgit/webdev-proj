@@ -75,6 +75,15 @@
                                 <p class="text-sm font-medium text-neutral-700 mb-2">Your Submission:</p>
                                 <p class="text-neutral-900 whitespace-pre-wrap">{{ $studentSubmission->submission_text }}</p>
                             </div>
+                            @if($studentSubmission->attachment)
+                                <div class="mt-4">
+                                    <p class="text-sm font-medium text-neutral-700 mb-2">Your Attachment URL:</p>
+                                    <a href="{{ $studentSubmission->attachment }}" target="_blank" rel="noopener noreferrer" 
+                                        class="text-primary-600 hover:text-primary-700 underline break-all">
+                                        {{ $studentSubmission->attachment }}
+                                    </a>
+                                </div>
+                            @endif
                             @if($studentSubmission->feedback)
                                 <div class="mt-4 p-4 bg-primary-50 rounded-lg border-l-4 border-primary-600">
                                     <p class="text-sm font-medium text-primary-900 mb-2">Instructor Feedback:</p>
@@ -139,6 +148,16 @@
                                         <p class="text-sm font-medium text-neutral-700 mb-2">Submission:</p>
                                         <p class="text-neutral-900 whitespace-pre-wrap text-sm">{{ $submission->submission_text }}</p>
                                     </div>
+
+                                    @if($submission->attachment)
+                                        <div class="mb-3">
+                                            <p class="text-sm font-medium text-neutral-700 mb-2">Attachment URL:</p>
+                                            <a href="{{ $submission->attachment }}" target="_blank" rel="noopener noreferrer" 
+                                                class="text-primary-600 hover:text-primary-700 underline text-sm break-all">
+                                                {{ $submission->attachment }}
+                                            </a>
+                                        </div>
+                                    @endif
 
                                     @if(auth()->user()->role === 'instructor' && auth()->id() === $course->instructor_id)
                                         <form method="POST" action="{{ route('assignment-submissions.update', [$course, $assignment, $submission]) }}" class="mt-4 pt-4 border-t border-neutral-200">
