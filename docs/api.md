@@ -36,7 +36,7 @@ SproutLMS is a **Laravel 11** application that currently serves **Blade-based we
 **Current (Web-only)**:
 
 -   All routes in `routes/web.php`
--   Session-based authentication
+-   Session-based authentication (Laravel Breeze)
 -   Controllers return Blade views
 -   Middleware: `auth`, `admin`, `instructor`, `student`
 

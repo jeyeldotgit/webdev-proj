@@ -70,7 +70,7 @@ Represents **admins**, **students**, and **instructors**.
     -   `progress(): HasMany<Progress>` – lesson completion rows for this student (`student_id`).
     -   `assignments(): HasMany<Assignment>` – assignments created by this user as instructor (`instructor_id`).
     -   `assignmentSubmissions(): HasMany<AssignmentSubmission>` – assignments submitted by this user as student (`student_id`).
--   **Security**: The `admin` role is restricted from public registration. The `RegisterController` validates that `role` must be `in:student,instructor`, preventing admin creation through the registration form. Admins must be created manually using Laravel Tinker or database seeders.
+-   **Security**: The `admin` role is restricted from public registration. The `RegisteredUserController` (Laravel Breeze) validates that `role` must be `in:student,instructor`, preventing admin creation through the registration form. Admins must be created manually using Laravel Tinker or database seeders.
 
 ### Course
 
@@ -359,7 +359,7 @@ SproutLMS follows a standard Laravel layered approach.
     -   Laravel's built-in session/auth middleware.
     -   Custom role middleware (aliased as `admin`, `instructor`, `student` in `bootstrap/app.php`).
 -   **Controllers** (`app/Http/Controllers`):
-    -   `Auth\LoginController`, `Auth\RegisterController` – authentication.
+    -   `Auth\AuthenticatedSessionController`, `Auth\RegisteredUserController` – authentication (Laravel Breeze).
     -   `DashboardController` – role-aware dashboard (redirects admins to `/admin`).
     -   `AdminController` – admin dashboard and student management.
     -   `CourseController` – browse courses, instructor/admin CRUD, public show page.
@@ -400,11 +400,11 @@ All routes are defined in `routes/web.php`. Route ordering is important to preve
 
 -   **Landing & auth**:
     -   `/` – landing page (`landing.blade.php`).
-    -   `/login` (GET) – `LoginController@showLoginForm`.
-    -   `/login` (POST) – `LoginController@login`.
-    -   `/logout` (POST) – `LoginController@logout`.
-    -   `/register` (GET) – `RegisterController@showRegistrationForm`.
-    -   `/register` (POST) – `RegisterController@register` (only allows `student` or `instructor` roles; `admin` is restricted).
+    -   `/login` (GET) – `AuthenticatedSessionController@create` (Laravel Breeze).
+    -   `/login` (POST) – `AuthenticatedSessionController@store` (Laravel Breeze).
+    -   `/logout` (POST) – `AuthenticatedSessionController@destroy` (Laravel Breeze).
+    -   `/register` (GET) – `RegisteredUserController@create` (Laravel Breeze).
+    -   `/register` (POST) – `RegisteredUserController@store` (Laravel Breeze; only allows `student` or `instructor` roles; `admin` is restricted).
 -   **Course browsing**:
     -   `/courses/browse` (GET) – `CourseController@browse` (only published courses).
     -   `/courses/{course}` (GET) – `CourseController@show` (course details; must be **after** all `/courses/*` static routes).
@@ -497,7 +497,7 @@ Route::middleware('auth')->group(function () {
         -   Students must have an `Enrollment` for the course.
         -   Instructors must own the course (or be admin).
 -   **Admin Registration Restriction**:
-    -   The `RegisterController` validates that `role` must be `in:student,instructor`, preventing admin creation through public registration.
+    -   The `RegisteredUserController@store` (Laravel Breeze) validates that `role` must be `in:student,instructor`, preventing admin creation through public registration.
     -   Admins must be created manually using Laravel Tinker (see README.md for instructions).
     -   **Why Tinker?** Laravel Tinker is Laravel's REPL (Read-Eval-Print Loop) that provides an interactive shell to interact with your Laravel application. It allows you to execute PHP code directly against your application's models and database, making it the ideal tool for creating admin users securely without exposing admin creation to the public registration form.
 
@@ -510,7 +510,7 @@ This section ties the schema and routing together for common user journeys.
 ### 1. Authentication & Registration
 
 -   **Register**:
-    -   `RegisterController@register` validates `name`, `email`, `password`, and `role`.
+    -   `RegisteredUserController@store` (Laravel Breeze) validates `name`, `email`, `password`, and `role`.
     -   **Important**: The `role` validation restricts values to `in:student,instructor`, preventing admin registration.
     -   Creates a `User` with a hashed password and chosen role.
     -   Logs the user in and redirects to `/dashboard`.
@@ -519,11 +519,12 @@ This section ties the schema and routing together for common user journeys.
     -   Use Laravel Tinker: `php artisan tinker`, then `User::create([...])` with `role => 'admin'`.
     -   See README.md for detailed instructions.
 -   **Login**:
-    -   `LoginController@login` validates credentials and calls `Auth::attempt`.
+    -   `AuthenticatedSessionController@store` (Laravel Breeze) validates credentials via `LoginRequest` and calls `Auth::attempt`.
+    -   Includes rate limiting protection (5 attempts per email/IP combination).
     -   On success, regenerates the session and redirects to the intended page or `/dashboard`.
-    -   Admins are automatically redirected to `/admin` dashboard.
+    -   Admins are automatically redirected to `/admin` dashboard via `DashboardController`.
 -   **Logout**:
-    -   `LoginController@logout` logs the user out and invalidates the session.
+    -   `AuthenticatedSessionController@destroy` (Laravel Breeze) logs the user out and invalidates the session.
 
 ### 2. Instructor: Course & Lesson Management
 
@@ -743,7 +744,8 @@ Use this checklist when adding or changing features:
     -   This simplifies controllers and keeps them aligned with the schema.
 
 -   **Auth**:
-    -   Currently uses the `web` guard and session-based auth only.
+    -   Uses Laravel Breeze for authentication with the `web` guard and session-based auth.
+    -   Breeze provides rate limiting, form request validation, and standardized authentication flow.
     -   For future API work, see `docs/api.md` (Sanctum-based plan).
 -   **Admin Creation**:
     -   Admins cannot be registered via public registration form.

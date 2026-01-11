@@ -1,72 +1,63 @@
-@extends('layouts.app')
+<x-guest-layout>
+    <form method="POST" action="{{ route('register') }}">
+        @csrf
 
-@section('title', 'Sign Up - SproutLMS')
+        <!-- Name -->
+        <div>
+            <x-input-label for="name" :value="__('Name')" />
+            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
+            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        </div>
 
-@section('content')
-<div class="max-w-md mx-auto px-4 py-12">
-    <div class="bg-white rounded-xl shadow-sm border border-neutral-200 p-8">
-        <h1 class="text-3xl font-bold text-neutral-900 mb-2">Create Account</h1>
-        <p class="text-neutral-600 mb-8">Join SproutLMS and start learning or teaching</p>
+        <!-- Email Address -->
+        <div class="mt-4">
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
 
-        <form method="POST" action="{{ route('register') }}">
-            @csrf
+        <!-- Role -->
+        <div class="mt-4">
+            <x-input-label for="role" :value="__('I want to')" />
+            <select id="role" name="role" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                <option value="">Select...</option>
+                <option value="student" {{ old('role') === 'student' ? 'selected' : '' }}>Learn (Student)</option>
+                <option value="instructor" {{ old('role') === 'instructor' ? 'selected' : '' }}>Teach (Instructor)</option>
+            </select>
+            <x-input-error :messages="$errors->get('role')" class="mt-2" />
+        </div>
 
-            <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-neutral-700 mb-2">Full Name</label>
-                <input type="text" name="name" id="name" value="{{ old('name') }}" required
-                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-primary-600">
-                @error('name')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
 
-            <div class="mb-4">
-                <label for="email" class="block text-sm font-medium text-neutral-700 mb-2">Email</label>
-                <input type="email" name="email" id="email" value="{{ old('email') }}" required
-                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-primary-600">
-                @error('email')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+            <x-text-input id="password" class="block mt-1 w-full"
+                            type="password"
+                            name="password"
+                            required autocomplete="new-password" />
 
-            <div class="mb-4">
-                <label for="role" class="block text-sm font-medium text-neutral-700 mb-2">I want to</label>
-                <select name="role" id="role" required
-                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-primary-600">
-                    <option value="">Select...</option>
-                    <option value="student" {{ old('role') === 'student' ? 'selected' : '' }}>Learn (Student)</option>
-                    <option value="instructor" {{ old('role') === 'instructor' ? 'selected' : '' }}>Teach (Instructor)</option>
-                </select>
-                @error('role')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        </div>
 
-            <div class="mb-4">
-                <label for="password" class="block text-sm font-medium text-neutral-700 mb-2">Password</label>
-                <input type="password" name="password" id="password" required
-                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-primary-600">
-                @error('password')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+        <!-- Confirm Password -->
+        <div class="mt-4">
+            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
 
-            <div class="mb-6">
-                <label for="password_confirmation" class="block text-sm font-medium text-neutral-700 mb-2">Confirm Password</label>
-                <input type="password" name="password_confirmation" id="password_confirmation" required
-                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-primary-600">
-            </div>
+            <x-text-input id="password_confirmation" class="block mt-1 w-full"
+                            type="password"
+                            name="password_confirmation" required autocomplete="new-password" />
 
-            <button type="submit" class="w-full bg-primary-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors">
-                Create Account
-            </button>
-        </form>
+            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
 
-        <p class="mt-6 text-center text-sm text-neutral-600">
-            Already have an account?
-            <a href="{{ route('login') }}" class="text-primary-600 hover:text-primary-700 font-semibold">Sign in</a>
-        </p>
-    </div>
-</div>
-@endsection
+        <div class="flex items-center justify-end mt-4">
+            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
+                {{ __('Already registered?') }}
+            </a>
 
+            <x-primary-button class="ms-4">
+                {{ __('Register') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
