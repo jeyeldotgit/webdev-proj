@@ -14,6 +14,7 @@ A lightweight, open-source Learning Management System built with Laravel. Design
 -   🎨 **Modern UI** - Clean, responsive design with Tailwind CSS
 -   🔐 **Role-Based Access** - Separate dashboards for admins, instructors, and students
 -   🌐 **Public Browsing** - Guests can browse published courses without login
+-   🚀 **Laravel Breeze** - Modern authentication system with rate limiting and security features
 
 ## Quick Start
 
